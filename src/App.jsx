@@ -22,9 +22,8 @@ const C = {
 };
 
 const TYPE_META = {
-  A: { label: "Poussée",  sub: "Pectoraux · Épaules · Triceps", icon: "↑", day: "Jour A" },
-  B: { label: "Tirage",   sub: "Dos · Biceps · Fessiers",       icon: "↓", day: "Jour B" },
-  C: { label: "Gainage",  sub: "Abdos · Cardio · Renforcement", icon: "◎", day: "Jour C" },
+  A: { label: "Renforcement", sub: "Pompes · Biceps · Triceps · Gainage", icon: "↑", day: "Jour A" },
+  B: { label: "Fitness",      sub: "Cardio 20 min · Biceps · Triceps",    icon: "◎", day: "Jour B" },
 };
 
 const EXERCISE_INFO = {
@@ -35,26 +34,12 @@ const EXERCISE_INFO = {
     tip: "Ne laisse pas les hanches tomber. Garde la ligne du corps parfaitement droite.",
     why: "Les poignées offrent plus d'amplitude qu'une pompe classique, ce qui sollicite mieux les pectoraux."
   },
-  pompes_diamant: {
-    friendlyName: "Pompes mains rapprochées", difficulty: 3,
-    muscles: ["Triceps", "Pectoraux internes"],
-    steps: ["Position de pompe, puis rapproche les deux mains sous la poitrine.", "Pouces et index forment un losange (un «diamant»).", "Descends en gardant les coudes proches du corps.", "Remonte lentement en soufflant."],
-    tip: "Trop difficile ? Pose les genoux au sol. C'est une excellente variante débutant.",
-    why: "Le placement rapproché isole les triceps — l'arrière du bras — bien mieux que les pompes normales."
-  },
   elev_laterale: {
     friendlyName: "Élévations latérales", difficulty: 1,
     muscles: ["Épaules (deltoïdes)"],
     steps: ["Debout, haltères de 3 kg dans chaque main, bras le long du corps.", "Lève les bras sur les côtés jusqu'à hauteur d'épaule.", "Tiens une demi-seconde en haut.", "Redescends lentement — ne lâche pas d'un coup."],
     tip: "Garde les coudes légèrement fléchis. Monte comme si tu versais un verre sur le côté.",
     why: "Développe les épaules en largeur pour une meilleure posture et un maintien renforcé."
-  },
-  dev_militaire: {
-    friendlyName: "Développé militaire (élastique)", difficulty: 2,
-    muscles: ["Épaules", "Triceps"],
-    steps: ["Passe l'élastique sous tes pieds, un bout dans chaque main à hauteur d'épaule.", "Pousse les mains vers le plafond jusqu'à tendre les bras.", "Redescends lentement jusqu'aux oreilles.", "Répète sans balancer le dos."],
-    tip: "Contracte le ventre pendant tout le mouvement pour protéger le bas du dos.",
-    why: "Renforce l'ensemble des épaules et améliore la posture. Essentiel au quotidien."
   },
   ext_triceps: {
     friendlyName: "Extension triceps (élastique)", difficulty: 1,
@@ -76,13 +61,6 @@ const EXERCISE_INFO = {
     steps: ["Debout, élastique passé sous les pieds.", "Attrape chaque extrémité, paumes vers le plafond.", "Ramène les mains vers les épaules en pliant les coudes.", "Redescends lentement."],
     tip: "Les coudes restent le long du corps pendant tout le mouvement.",
     why: "Développe les biceps — le muscle de l'avant du bras."
-  },
-  face_pull: {
-    friendlyName: "Tirage vers le visage (élastique)", difficulty: 2,
-    muscles: ["Arrière des épaules", "Dos supérieur"],
-    steps: ["Fixe l'élastique à hauteur de visage (porte, poignée...).", "Saisis les deux bouts, bras tendus devant toi.", "Tire vers ton visage en écartant les coudes sur les côtés.", "Reviens lentement en contrôlant."],
-    tip: "Imagine que tu écartes l'élastique derrière ta tête. Tes épaules s'ouvrent vers l'arrière.",
-    why: "Protège les épaules des blessures et améliore grandement la posture."
   },
   squat: {
     friendlyName: "Squat (élastique)", difficulty: 1,
@@ -140,23 +118,16 @@ const GLOSSARY = [
 const PROGRAM = {
   A: { ...TYPE_META.A, color: C.accent, exercises: [
     { id: "pompes_poignees", sets: 3, reps: 12 },
-    { id: "pompes_diamant",  sets: 3, reps: 10 },
-    { id: "elev_laterale",  sets: 3, reps: 15 },
-    { id: "dev_militaire",  sets: 3, reps: 12 },
-    { id: "ext_triceps",    sets: 3, reps: 12 },
+    { id: "curl",            sets: 3, reps: 15 },
+    { id: "ext_triceps",     sets: 3, reps: 12 },
+    { id: "gainage",         sets: 3, reps: 45, isTime: true },
+    { id: "crunch",          sets: 3, reps: 20 },
+    { id: "mountain",        sets: 3, reps: 30, isTime: true },
   ]},
   B: { ...TYPE_META.B, color: C.accent, exercises: [
-    { id: "rowing",     sets: 3, reps: 15 },
-    { id: "curl",       sets: 3, reps: 15 },
-    { id: "face_pull",  sets: 3, reps: 15 },
-    { id: "squat",      sets: 3, reps: 20 },
-    { id: "hip_thrust", sets: 3, reps: 20 },
-  ]},
-  C: { ...TYPE_META.C, color: C.accent, exercises: [
     { id: "cours_fitness", sets: 1, reps: 1, note: "Lance ton cours habituel" },
-    { id: "gainage",       sets: 3, reps: 45, isTime: true },
-    { id: "crunch",        sets: 3, reps: 20 },
-    { id: "mountain",      sets: 3, reps: 30, isTime: true },
+    { id: "curl",          sets: 3, reps: 15 },
+    { id: "ext_triceps",   sets: 3, reps: 12 },
   ]},
 };
 
@@ -273,6 +244,51 @@ function GlossaryModal({ onClose }) {
   );
 }
 
+function ExerciseGuideModal({ exId, onClose }) {
+  const info = EXERCISE_INFO[exId];
+  if (!info) return null;
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(28,25,23,0.5)", zIndex:300, backdropFilter:"blur(2px)", display:"flex", alignItems:"flex-end", justifyContent:"center", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.surface, borderRadius:20, width:"100%", maxWidth:448, maxHeight:"85vh", overflow:"hidden", display:"flex", flexDirection:"column", border:`1px solid ${C.border}` }}>
+        <div style={{ padding:"18px 18px 14px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }}>
+          <div>
+            <div style={{ ...T.display, fontSize:"1.25rem", marginBottom:6 }}>{info.friendlyName}</div>
+            <DiffDots level={info.difficulty}/>
+          </div>
+          <button onClick={onClose} style={{ background:C.faint, border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:16, color:C.muted, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginLeft:12 }}>✕</button>
+        </div>
+        <div style={{ overflowY:"auto", padding:"16px 18px 24px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div>
+            <div style={{ ...T.label, marginBottom:8 }}>Muscles ciblés</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {info.muscles.map(m=>(<span key={m} style={{ fontSize:12, fontFamily:"'DM Sans',sans-serif", fontWeight:500, background:C.faint, color:C.text, borderRadius:20, padding:"3px 10px" }}>{m}</span>))}
+            </div>
+          </div>
+          <div>
+            <div style={{ ...T.label, marginBottom:10 }}>Comment faire</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {info.steps.map((s,i)=>(
+                <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                  <span style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:600, width:18, flexShrink:0, paddingTop:2 }}>{i+1}.</span>
+                  <p style={{ ...T.body, fontSize:13, lineHeight:1.6, margin:0 }}>{s}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background:C.faint, borderRadius:10, padding:"12px 14px" }}>
+            <div style={{ ...T.label, marginBottom:6 }}>Conseil de forme</div>
+            <p style={{ ...T.body, fontSize:13, lineHeight:1.6, margin:0 }}>{info.tip}</p>
+          </div>
+          <div>
+            <div style={{ ...T.label, marginBottom:6 }}>Pourquoi cet exercice ?</div>
+            <p style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:13, lineHeight:1.6, margin:0 }}>{info.why}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState("dashboard");
   const [sessions, setSessions] = useState([]);
@@ -293,7 +309,7 @@ export default function App() {
     try { localStorage.setItem("fit-charlie-v1", JSON.stringify(s)); } catch {}
   };
 
-  const nextType = !sessions.length ? "A" : ["A","B","C"][(["A","B","C"].indexOf(sessions.at(-1)?.type)+1)%3];
+  const nextType = sessions.length === 0 ? "A" : sessions.at(-1)?.type === "A" ? "B" : "A";
 
   const startWorkout = type => {
     setWorkout({ type, startTime:Date.now(), exercises: PROGRAM[type].exercises.map(ex=>({
@@ -391,6 +407,7 @@ function Dashboard({ sessions, streak, nextType, startWorkout, setScreen, openGl
 
 function WorkoutScreen({ workout, setWorkout, finish, back, openGlossary }) {
   const [elapsed, setElapsed] = useState(0);
+  const [guideExId, setGuideExId] = useState(null);
   const [restSecs, setRestSecs] = useState(0);
   const [restActive, setRestActive] = useState(false);
   const prog = PROGRAM[workout.type];
@@ -456,7 +473,20 @@ function WorkoutScreen({ workout, setWorkout, finish, back, openGlossary }) {
                 <div style={{ padding:"14px 16px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
                     <div>
-                      <div style={{ ...T.body, fontWeight:600, fontSize:14, marginBottom:5, textDecoration:allDone?"line-through":"none", color:allDone?C.muted:C.text }}>{info?.friendlyName||ex.id}</div>
+                      <button
+                        onClick={() => info && setGuideExId(ex.id)}
+                        style={{
+                          background:"none", border:"none", padding:0, cursor:info?"pointer":"default",
+                          ...T.body, fontWeight:600, fontSize:14, marginBottom:5,
+                          textDecoration: allDone ? "line-through" : info ? "underline dotted" : "none",
+                          textDecorationColor: allDone ? C.muted : C.accentMid,
+                          color: allDone ? C.muted : info ? C.accentMid : C.text,
+                          textAlign:"left"
+                        }}
+                        title={info ? "Voir le guide technique" : undefined}
+                      >
+                        {info?.friendlyName||ex.id}
+                      </button>
                       {info && <DiffDots level={info.difficulty}/>}
                     </div>
                     {allDone && <span style={{ color:C.accent, fontSize:16 }}>✓</span>}
@@ -487,6 +517,7 @@ function WorkoutScreen({ workout, setWorkout, finish, back, openGlossary }) {
           })}
         </div>
       </div>
+      {guideExId && <ExerciseGuideModal exId={guideExId} onClose={() => setGuideExId(null)} />}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, padding:16, background:`linear-gradient(transparent, ${C.bg} 40%)` }}>
         <div style={{ maxWidth:448, margin:"0 auto" }}>
           <button onClick={finish} disabled={pct<50} style={{ ...btn(pct>=50?"primary":"disabled"), width:"100%", padding:"14px" }}>
