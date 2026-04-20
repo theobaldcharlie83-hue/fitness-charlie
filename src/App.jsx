@@ -293,6 +293,7 @@ export default function App() {
   const [screen, setScreen] = useState("dashboard");
   const [sessions, setSessions] = useState([]);
   const [workout, setWorkout] = useState(null);
+  const [previewType, setPreviewType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showGlossary, setShowGlossary] = useState(false);
 
@@ -325,6 +326,16 @@ export default function App() {
     save([...sessions,s]); setWorkout(null); setScreen("dashboard");
   };
 
+  const deleteSession = (id) => {
+    const s = sessions.filter(x => x.id !== id);
+    save(s);
+  };
+
+  const openPreview = (type) => {
+    setPreviewType(type);
+    setScreen("preview");
+  };
+
   if (loading) return (
     <div style={{ background:C.bg, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <span style={{ color:C.muted, fontFamily:"'DM Sans',sans-serif", fontSize:13 }}>Chargement…</span>
@@ -335,10 +346,11 @@ export default function App() {
     <>
       <style>{FONT_IMPORT}</style>
       <div style={{ background:C.bg, minHeight:"100vh", fontFamily:"'DM Sans',sans-serif" }}>
-        {screen==="dashboard" && <Dashboard sessions={sessions} streak={computeStreak(sessions)} nextType={nextType} startWorkout={startWorkout} setScreen={setScreen} openGlossary={()=>setShowGlossary(true)}/>}
+        {screen==="dashboard" && <Dashboard sessions={sessions} streak={computeStreak(sessions)} nextType={nextType} openPreview={openPreview} setScreen={setScreen} openGlossary={()=>setShowGlossary(true)}/>}
+        {screen==="preview" && previewType && <WorkoutPreviewScreen type={previewType} back={()=>setScreen("dashboard")} startWorkout={startWorkout} todayDone={sessions.some(s=>new Date(s.date).toDateString()===new Date().toDateString())} />}
         {screen==="workout" && workout && <WorkoutScreen workout={workout} setWorkout={setWorkout} finish={finishWorkout} back={()=>{setWorkout(null);setScreen("dashboard");}} openGlossary={()=>setShowGlossary(true)}/>}
         {screen==="progress" && <ProgressScreen sessions={sessions} back={()=>setScreen("dashboard")}/>}
-        {screen==="history"  && <HistoryScreen  sessions={sessions} back={()=>setScreen("dashboard")}/>}
+        {screen==="history"  && <HistoryScreen  sessions={sessions} back={()=>setScreen("dashboard")} deleteSession={deleteSession}/>}
         {screen==="guide"    && <GuideScreen back={()=>setScreen("dashboard")} openGlossary={()=>setShowGlossary(true)}/>}
         {showGlossary && <GlossaryModal onClose={()=>setShowGlossary(false)}/>}
       </div>
@@ -346,7 +358,7 @@ export default function App() {
   );
 }
 
-function Dashboard({ sessions, streak, nextType, startWorkout, setScreen, openGlossary }) {
+function Dashboard({ sessions, streak, nextType, openPreview, setScreen, openGlossary }) {
   const prog = PROGRAM[nextType];
   const todayDone = sessions.some(s=>new Date(s.date).toDateString()===new Date().toDateString());
   const avgDur = sessions.length ? Math.round(sessions.reduce((a,s)=>a+(s.duration||0),0)/sessions.length) : null;
@@ -381,13 +393,16 @@ function Dashboard({ sessions, streak, nextType, startWorkout, setScreen, openGl
           ))}
         </div>
         {!todayDone
-          ? <button onClick={()=>startWorkout(nextType)} style={btn("primary")}>Démarrer la séance</button>
-          : <div style={{ ...btn("accent"), textAlign:"center", borderRadius:12, padding:"13px 20px", fontSize:14, fontWeight:600, cursor:"default" }}>Séance du jour complétée ✓</div>
+          ? <button onClick={()=>openPreview(nextType)} style={btn("primary")}>Démarrer la séance</button>
+          : <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ ...btn("accent"), textAlign:"center", borderRadius:12, padding:"13px 20px", fontSize:14, fontWeight:600, cursor:"default" }}>Séance du jour complétée ✓</div>
+              <button onClick={()=>openPreview(nextType)} style={{ background:"none", border:"none", cursor:"pointer", ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600 }}>Voir les détails quand même</button>
+            </div>
         }
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
         {Object.entries(PROGRAM).filter(([k])=>k!==nextType).map(([type,p])=>(
-          <button key={type} onClick={()=>startWorkout(type)} style={{ ...card, padding:"14px 16px", textAlign:"left", cursor:"pointer", border:`1px solid ${C.border}` }}>
+          <button key={type} onClick={()=>openPreview(type)} style={{ ...card, padding:"14px 16px", textAlign:"left", cursor:"pointer", border:`1px solid ${C.border}` }}>
             <div style={{ ...T.label, marginBottom:6 }}>{p.day}</div>
             <div style={{ ...T.display, fontSize:"1.1rem" }}>{p.label}</div>
           </button>
@@ -557,7 +572,7 @@ function GuideScreen({ back, openGlossary }) {
 function ProgressScreen({ sessions, back }) {
   const [sel, setSel] = useState(null);
   const allExs = []; const seen = new Set();
-  for(const s of sessions) for(const ex of s.exercises) if(!seen.has(ex.id)){seen.add(ex.id);allExs.push({id:ex.id,name:ex.name});}
+  for(const s of sessions) for(const ex of s.exercises) if(!seen.has(ex.id) && EXERCISE_INFO[ex.id]){seen.add(ex.id);allExs.push({id:ex.id,name:EXERCISE_INFO[ex.id].friendlyName || ex.name});}
   const cid=sel||allExs[0]?.id;
   const data=sessions.filter(s=>s.exercises.some(e=>e.id===cid)).map(s=>{
     const ex=s.exercises.find(e=>e.id===cid);
@@ -616,7 +631,7 @@ function ProgressScreen({ sessions, back }) {
   );
 }
 
-function HistoryScreen({ sessions, back }) {
+function HistoryScreen({ sessions, back, deleteSession }) {
   const sorted=[...sessions].sort((a,b)=>new Date(b.date)-new Date(a.date));
   return (
     <div style={{ maxWidth:448, margin:"0 auto", padding:"28px 16px 60px" }}>
@@ -643,8 +658,11 @@ function HistoryScreen({ sessions, back }) {
                     <div style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>{totalSets} sér. · {totalReps} reps</div>
                   </div>
                 </div>
-                <div style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:12, marginBottom:8 }}>
-                  {new Date(s.date).toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long"})}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>
+                    {new Date(s.date).toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long"})}
+                  </div>
+                  <button onClick={() => { if(window.confirm("Supprimer cette séance ?")) deleteSession(s.id); }} style={{ background:"none", border:"none", cursor:"pointer", color:C.danger, fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif" }}>Supprimer</button>
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                   {s.exercises.map(ex=>(<span key={ex.id} style={{ fontSize:11, fontFamily:"'DM Sans',sans-serif", background:C.faint, color:C.muted, borderRadius:20, padding:"2px 8px" }}>{ex.name}</span>))}
@@ -654,6 +672,37 @@ function HistoryScreen({ sessions, back }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function WorkoutPreviewScreen({ type, back, startWorkout, todayDone }) {
+  const prog = PROGRAM[type];
+  return (
+    <div style={{ maxWidth:448, margin:"0 auto", padding:"28px 16px 80px" }}>
+      <button onClick={back} style={{ background:"none", border:"none", cursor:"pointer", ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:13, marginBottom:20 }}>← Retour</button>
+      <div style={{ ...T.label, marginBottom:4 }}>{prog.day}</div>
+      <div style={{ ...T.display, fontSize:"1.7rem", marginBottom:4 }}>{prog.label}</div>
+      <div style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:13, marginBottom:24 }}>{prog.sub}</div>
+      
+      <div style={{ ...card, padding:"16px", marginBottom:24 }}>
+        <div style={{ ...T.label, marginBottom:12 }}>Exercices de la séance</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {prog.exercises.map((ex, i) => {
+            const info = EXERCISE_INFO[ex.id];
+            return (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ ...T.body, fontSize:14, fontWeight:500 }}>{info?.friendlyName || ex.id}</span>
+                <span style={{ ...T.muted, fontFamily:"'DM Sans',sans-serif", fontSize:12 }}>{ex.sets} × {ex.reps} {ex.isTime ? "sec" : "reps"}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      <button onClick={() => startWorkout(type)} style={btn(todayDone ? "accent" : "primary")}>
+        {todayDone ? "Lancer quand même" : "Lancer la séance"}
+      </button>
     </div>
   );
 }
