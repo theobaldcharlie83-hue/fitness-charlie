@@ -16,6 +16,9 @@ dist-ssr
 .claude/memory/
 .claude/settings.local.json
 
+# Scripts locaux
+ship.ps1
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
